@@ -2,7 +2,6 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
@@ -81,4 +80,7 @@ def download_link(song_id: str):
 
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", host = "127.0.0.1", port = 5000)
+    from os import environ
+    from uvicorn import run
+
+    run("app:app", host = "0.0.0.0", port = int(environ.get("PORT", 5000)))
