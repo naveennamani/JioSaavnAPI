@@ -1,0 +1,13 @@
+{
+  "name": "JioSaavn-Unofficial-API",
+  "description": "Unofficial API of JioSaavn provided by FastAPI, developed by Naveen Namani",
+  "keywords": [
+    "python",
+    "fastapi",
+    "pydantic",
+    "saavn",
+    "jiosaavn",
+    "music"
+  ],
+  "repository": "https://github.com/naveennamani/JioSaavnAPI"
+}
