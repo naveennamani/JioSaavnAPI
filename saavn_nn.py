@@ -64,6 +64,7 @@ class SongDetails(BaseModel):
     is_320kbps: bool
     encrypted_media_url: str
     media_url: str
+    media_url_default: str
     duration: int
     has_lyrics: bool
     lyrics_snippet: str
@@ -122,14 +123,24 @@ class PlaylistDetails(AlbumDetails):
 ################################################################################
 # jiosaavn_api functions
 ################################################################################
-def jiosaavn_request(search_params):
+def jiosaavn_request(search_params, resp_only = False):
     search_params = {'api_version': 4, '_format': 'json', '_marker': 0,
                      **search_params}
-    resp = requests.get(base_url, params = search_params)
+    resp = requests.get(base_url, params = search_params, headers = {
+        "Host": "c.saavncdn.com",
+        "Referer": "https://www.jiosaavn.com",
+        'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/84.0.4147.89 Safari/537.36 "
+                      "Edg/84.0.522.40"
+    })
+    if resp_only:
+        return resp
     try:
         return resp.json()
     except:
         print_exc()
+        print(resp.text)
         try:
             return json.loads(resp.text.strip())
         except:
@@ -179,8 +190,10 @@ def get_song_details_from_url(song_url: str) -> SongDetails:
 
 def fix_song_details(song_details) -> SongDetails:
     song_more_details = song_details["more_info"]
-    song_details["media_url"] = decrypt_url(
+    default_media_url, media_url = decrypt_url(
         song_more_details["encrypted_media_url"])
+    song_details["media_url"] = media_url
+    song_details["media_url_default"] = default_media_url
     # song_details["media_url"] = check_media_url(decrypt_url(
     #     song_more_details['encrypted_media_url']))
     # song_details["image"] = fix_image_url(song_details["image"])
@@ -253,9 +266,10 @@ def get_lyrics(song_id: str):
 ################################################################################
 def decrypt_url(url):
     enc_url = base64.b64decode(url.strip())
-    dec_url = des_cipher.decrypt(enc_url, padmode = PAD_PKCS5).decode('utf-8')
-    dec_url = dec_url.replace("_96.mp4", "_320.mp3")
-    return dec_url
+    default_dec_url = des_cipher.decrypt(enc_url, padmode = PAD_PKCS5).decode(
+        'utf-8')
+    dec_url = default_dec_url.replace("_96.mp4", "_320.mp3")
+    return default_dec_url, dec_url
 
 
 def fix_image_url(url):
