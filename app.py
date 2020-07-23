@@ -7,12 +7,14 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
 
+from file_downloader import TaskManager
 from saavn_nn import AlbumDetails
 from saavn_nn import PlaylistDetails
 from saavn_nn import SongDetails
 from saavn_nn import check_media_url
 from saavn_nn import get_album_details
 from saavn_nn import get_album_details_from_url
+from saavn_nn import get_lyrics
 from saavn_nn import get_playlist_details
 from saavn_nn import get_playlist_details_from_url
 from saavn_nn import get_song_details
@@ -20,6 +22,7 @@ from saavn_nn import get_song_details_from_url
 from saavn_nn import search_query
 
 app = FastAPI()
+task_manager = TaskManager()
 
 
 @app.get('/')
@@ -67,6 +70,12 @@ def song_details(song_id: str) -> SongDetails:
     return get_song_details(song_id)
 
 
+@app.get('/lyrics/{song_id}')
+def get_song_lyrics_(song_id: str):
+    """Get song lyrics"""
+    return get_lyrics(song_id)
+
+
 @app.get('/album/{album_id}')
 def album_details(album_id: str) -> AlbumDetails:
     """Get album details including details of all songs in the album by using
@@ -90,8 +99,22 @@ def download_link(song_id: str) -> str:
 
 @app.get('/download_song/{song_id}')
 def download_song(song_id: str):
-    song_details = check_media_url(get_song_details(song_id))
+    song_details = get_song_details(song_id)
     media_url = song_details.media_url
+    return {"task_id": task_manager.add_task(media_url)}
+
+
+@app.get('/get_task_status/{task_id}')
+def get_task_status(task_id: int):
+    print("getting task status", task_id)
+    return {"task_finished": task_manager.get_task_status(task_id)}
+
+
+@app.get('/del_task/{task_id}')
+def del_task(task_id: int):
+    print("deleting task status", task_id)
+    task_manager.del_task(task_id)
+    return {"task_finished": True}
 
 
 if __name__ == '__main__':

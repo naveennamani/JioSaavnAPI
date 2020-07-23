@@ -2,7 +2,9 @@ import base64
 import json
 from traceback import print_exc
 from typing import Any
+from typing import Dict
 from typing import List
+from typing import Union
 
 import requests
 from fastapi.applications import FastAPI
@@ -123,17 +125,22 @@ class PlaylistDetails(AlbumDetails):
 ################################################################################
 # jiosaavn_api functions
 ################################################################################
-def jiosaavn_request(search_params, resp_only = False):
+def jiosaavn_request(search_params, headers = None, resp_only = False) -> Union[
+    requests.Response, Dict, None]:
+    if headers is None:
+        headers = {}
     search_params = {'api_version': 4, '_format': 'json', '_marker': 0,
                      **search_params}
-    resp = requests.get(base_url, params = search_params, headers = {
-        "Host": "c.saavncdn.com",
+    headers = {
+        # "Host": "c.saavncdn.com",
         "Referer": "https://www.jiosaavn.com",
         'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                       "AppleWebKit/537.36 (KHTML, like Gecko) "
                       "Chrome/84.0.4147.89 Safari/537.36 "
-                      "Edg/84.0.522.40"
-    })
+                      "Edg/84.0.522.40",
+        **headers
+    }
+    resp = requests.get(base_url, params = search_params, headers = headers)
     if resp_only:
         return resp
     try:
@@ -155,14 +162,14 @@ def search_query(query: str) -> List[SongDetails]:
         'query': query
     })
     if query_results is None:
-        return None
+        return []
     return [
         get_song_details(song['id'])
         for song in query_results["songs"]['data']
     ]
 
 
-def get_song_details(song_id: str) -> SongDetails:
+def get_song_details(song_id: str) -> Union[SongDetails, None]:
     resp = jiosaavn_request({
         '__call': "song.getDetails",
         'pids': song_id,
@@ -258,7 +265,12 @@ def get_playlist_details_from_url(
 
 
 def get_lyrics(song_id: str):
-    pass
+    lyrics_json = jiosaavn_request({
+        "__call": "lyrics.getLyrics",
+        "lyrics_id": song_id,
+        "ctx": "wap6dot0"
+    })
+    return lyrics_json
 
 
 ################################################################################
@@ -283,28 +295,6 @@ def fix_image_url(url):
 def fix_title(title):
     title = title.replace('&quot;', '')
     return title
-
-
-def get_lyrics(link):
-    try:
-        if '/song/' in link:
-            link = link.replace("/song/", '/lyrics/')
-            link_ = link.split('/')
-            link_[-2] = link_[-2] + '-lyrics'
-            link = '/'.join(link_)
-            source = requests.get(link).text
-            soup = BeautifulSoup(source, 'lxml')
-            res = soup.find(class_ = 'u-disable-select')
-            lyrics = str(res).replace("<span>", "")
-            lyrics = lyrics.replace("</span>", "")
-            lyrics = lyrics.replace("<br/>", "\n")
-            lyrics = lyrics.replace('<p class="lyrics"> ', '')
-            lyrics = lyrics.replace("</p>", '')
-            lyrics = lyrics.split("<p>")[1]
-            return (lyrics)
-    except Exception:
-        print_exc()
-        return None
 
 
 def expand_url(url):
