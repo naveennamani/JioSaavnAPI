@@ -50,6 +50,7 @@ def download_file(url: str):
         with open(resolve_file_name(url), "wb") as fh:
             fh.write(resp.content)
         print("downloaded", url)
+        open(resolve_file_name(url))
     except Exception:
         from traceback import print_exc
         print_exc()
