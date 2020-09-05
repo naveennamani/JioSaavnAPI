@@ -4,6 +4,9 @@ from typing import Dict
 
 import requests
 
+if not os.path.exists(".tmp/files"):
+    os.mkdir(".tmp/files")
+
 
 class TaskManager(object):
     def __init__(self):
@@ -57,4 +60,4 @@ def download_file(url: str):
 
 
 def resolve_file_name(url: str):
-    return url.split('/')[-1]
+    return os.path.join("./tmp/files/", url.split('/')[-1])
